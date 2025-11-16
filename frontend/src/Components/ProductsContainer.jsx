@@ -1,7 +1,14 @@
 import ProductCard from "./ProductCard";
 
 // Products container is the wrapper for all items that a user can add to the cart
-export default function ProductsContainer({ products, productQuantities, handleAddItemToCart, handleUpdateQuantity }) {
+export default function ProductsContainer({
+    products,
+    productQuantities,
+    handleAddItemToCart,
+    handleUpdateQuantity,
+    handleOnProductDelete,
+    handleOnProductEdit,
+}) {
     return (
         <div className="ProductsContainer">
             {/* Set up all product cards so that the user can add items to the cart */}
@@ -12,6 +19,8 @@ export default function ProductsContainer({ products, productQuantities, handleA
                     productQuantity={productQuantities.find((p) => p.id === product.id)}
                     handleAddItemToCart={handleAddItemToCart}
                     handleUpdateQuantity={handleUpdateQuantity}
+                    handleOnProductDelete={handleOnProductDelete}
+                    handleOnProductEdit={handleOnProductEdit}
                 />
             ))}
         </div>

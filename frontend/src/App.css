@@ -78,6 +78,10 @@
     width: 50%;
 }
 
+.ProductsForm {
+    width: 25%;
+}
+
 .ProductsContainer {
     width: 75%;
     max-width: 800px;
@@ -142,6 +146,10 @@ img {
 .CartListBtns {
     display: flex;
     justify-content: space-around;
+}
+
+.EditButton {
+    background-color: blue;
 }
 
 .RemoveButton {

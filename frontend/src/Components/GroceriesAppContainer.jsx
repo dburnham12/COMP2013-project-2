@@ -2,21 +2,147 @@ import { useState } from "react";
 import CartContainer from "./CartContainer";
 import NavBar from "./NavBar";
 import ProductsContainer from "./ProductsContainer";
+import { useEffect } from "react";
+import axios from "axios";
+import ProductsForm from "./ProductsForm";
 
 // Contains all logic for the application and manages states, all functions to be used are written here
-export default function GroceriesAppContainer({ products }) {
+export default function GroceriesAppContainer() {
+    // State used to store all products in our list of products
+    const [products, setProducts] = useState([]);
     // State used to store product quantities for all products in the list of products
-    const [productQuantities, setProductQuantities] = useState(
-        products.map((prod) => {
-            return {
-                id: prod.id,
-                quantity: 0,
-            };
-        })
-    );
-
+    const [productQuantities, setProductQuantities] = useState([]);
     // State used to store all cart items for all products currently in the cart
     const [cartItems, setCartItems] = useState([]);
+    const [formData, setFormData] = useState({
+        productName: "",
+        brand: "",
+        image: "",
+        price: "",
+    });
+    const [postResponse, setPostResponse] = useState({ message: "", date: "" });
+    const [isEditing, setIsEditing] = useState(false);
+
+    useEffect(() => {
+        handleProductsDB();
+    }, [postResponse]);
+
+    const handleProductsDB = async () => {
+        try {
+            const response = await axios.get("http://localhost:3000/products");
+            setProducts(response.data);
+            setProductQuantities(
+                response.data.map((prod) => {
+                    return {
+                        id: prod.id,
+                        quantity: 0,
+                    };
+                })
+            );
+        } catch (error) {
+            console.log(error.message);
+        }
+    };
+
+    const handleResetForm = () => {
+        setFormData({
+            productName: "",
+            brand: "",
+            image: "",
+            price: "",
+        });
+    };
+
+    // Handle the submission of data
+    const handleOnProductsFormSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (isEditing) {
+                handleOnProductUpdate(formData._id);
+                handleResetForm();
+                setIsEditing(false);
+            } else {
+                console.log(formData);
+                await axios
+                    .post("http://localhost:3000/products", formData)
+                    .then((response) => setPostResponse(response.data))
+                    .then(() => handleResetForm());
+            }
+        } catch (error) {
+            console.log(error.message);
+        }
+    };
+
+    // Handle the onChange event for the form
+    const handleOnProductsFormChange = (e) => {
+        setFormData((prevData) => {
+            return { ...prevData, [e.target.name]: e.target.value };
+        });
+    };
+
+    // Handle to delete one contact by id
+    const handleOnProductDelete = async (dbId, productId) => {
+        try {
+            const response = await axios.delete(`http://localhost:3000/products/${dbId}`);
+            setPostResponse(response.data);
+
+            // If the item is in the cart and we have deleted it delete item from cart as well
+            const foundCartItem = cartItems.find((cartItem) => cartItem.id === productId);
+            if (foundCartItem) handleRemoveItemFromCart(productId);
+        } catch (error) {
+            console.log(error.message);
+        }
+    };
+
+    const handleOnProductEdit = async (id) => {
+        try {
+            const productToEdit = await axios.get(`http://localhost:3000/products/${id}`);
+            setFormData({
+                productName: productToEdit.data.productName,
+                brand: productToEdit.data.brand,
+                image: productToEdit.data.image,
+                price: productToEdit.data.price,
+                id: productToEdit.data.id,
+                _id: productToEdit.data._id,
+            });
+            setIsEditing(true);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    // Handle updating the api patch route
+    const handleOnProductUpdate = async (id) => {
+        try {
+            const result = await axios.patch(`http://localhost:3000/products/${id}`, formData);
+            setPostResponse({ message: result.data.message, date: result.data.date });
+
+            // If the item exists within the cart we need to update it as well
+            const foundCartItem = cartItems.find((cartItem) => cartItem._id === formData._id);
+            if (foundCartItem) {
+                setCartItems(
+                    cartItems.map((cartItem) => {
+                        if (cartItem.id === foundCartItem.id) {
+                            console.log("found");
+                            return {
+                                _id: id,
+                                id: formData.id,
+                                productName: formData.productName,
+                                brand: formData.brand,
+                                image: formData.image,
+                                price: formData.price,
+                                quantity: cartItem.quantity,
+                                total: calculateItemTotal(formData.price, cartItem.quantity),
+                            };
+                        }
+                        return cartItem;
+                    })
+                );
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
 
     // Function used to calculate the item total based off of quantity and price
     const calculateItemTotal = (price, quantity) => {
@@ -153,12 +279,21 @@ export default function GroceriesAppContainer({ products }) {
             {/* Set up the NavBar */}
             <NavBar cartCount={cartItems.length} />
             <div className="GroceriesApp-Container">
+                <ProductsForm
+                    {...formData}
+                    handleOnProductsFormSubmit={handleOnProductsFormSubmit}
+                    handleOnProductsFormChange={handleOnProductsFormChange}
+                    postResponse={postResponse}
+                    isEditing={isEditing}
+                />
                 {/* Set up the ProductsContainer */}
                 <ProductsContainer
                     products={products}
                     productQuantities={productQuantities}
                     handleAddItemToCart={handleAddItemToCart}
                     handleUpdateQuantity={handleUpdateQuantity}
+                    handleOnProductEdit={handleOnProductEdit}
+                    handleOnProductDelete={handleOnProductDelete}
                 />
                 {/* Set up the CartContainer */}
                 <CartContainer
