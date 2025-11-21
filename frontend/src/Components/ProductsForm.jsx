@@ -42,12 +42,14 @@ export default function ProductsForm({
             />
             <br />
             <input
-                type="text"
+                type="number"
                 name="price"
                 id="price"
                 value={price}
                 onChange={handleOnProductsFormChange}
                 placeholder="Price"
+                step={0.01}
+                min={0}
                 required
             />
             <br />

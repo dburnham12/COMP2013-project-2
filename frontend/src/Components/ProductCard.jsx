@@ -3,7 +3,6 @@ import QuantityCounter from "./QuantityCounter";
 // Represents a single product card for items that can be added to the cart
 export default function ProductCard({
     _id,
-    id,
     productName,
     brand,
     image,
@@ -21,9 +20,9 @@ export default function ProductCard({
             <h5>{brand}</h5>
             {/* Add a quantity counter with mode 0 to update products instead of cart */}
             <QuantityCounter
-                id={id}
+                _id={_id}
                 mode={0}
-                itemQuantity={productQuantity.quantity}
+                itemQuantity={productQuantity?.quantity || 0}
                 handleUpdateQuantity={handleUpdateQuantity}
             />
             <p>{price}</p>
@@ -33,7 +32,6 @@ export default function ProductCard({
                     // Set up a new object and use the addItemToCart function to add it to the cart
                     handleAddItemToCart({
                         _id,
-                        id,
                         productName,
                         brand,
                         quantity: productQuantity.quantity,
@@ -47,7 +45,7 @@ export default function ProductCard({
             <button className="EditButton" onClick={() => handleOnProductEdit(_id)}>
                 Edit
             </button>
-            <button className="RemoveButton" onClick={() => handleOnProductDelete(_id, id)}>
+            <button className="RemoveButton" onClick={() => handleOnProductDelete(_id)}>
                 Delete
             </button>
         </div>

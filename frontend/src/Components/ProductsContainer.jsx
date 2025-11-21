@@ -14,9 +14,9 @@ export default function ProductsContainer({
             {/* Set up all product cards so that the user can add items to the cart */}
             {products.map((product) => (
                 <ProductCard
-                    key={product.id}
+                    key={product._id}
                     {...product}
-                    productQuantity={productQuantities.find((p) => p.id === product.id)}
+                    productQuantity={productQuantities.find((p) => p._id === product._id)}
                     handleAddItemToCart={handleAddItemToCart}
                     handleUpdateQuantity={handleUpdateQuantity}
                     handleOnProductDelete={handleOnProductDelete}

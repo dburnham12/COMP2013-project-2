@@ -19,7 +19,7 @@ export default function CartContainer({
                     {/* Map cart items and display a cart card for each individual item */}
                     {cartItems.map((cartItem) => (
                         <CartCard
-                            key={cartItem.id}
+                            key={cartItem._id}
                             {...cartItem}
                             handleRemoveItemFromCart={handleRemoveItemFromCart}
                             handleUpdateQuantity={handleUpdateQuantity}

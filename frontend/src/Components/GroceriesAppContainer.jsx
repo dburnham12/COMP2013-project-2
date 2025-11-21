@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import CartContainer from "./CartContainer";
 import NavBar from "./NavBar";
 import ProductsContainer from "./ProductsContainer";
-import { useEffect } from "react";
-import axios from "axios";
 import ProductsForm from "./ProductsForm";
+
+import axios from "axios";
 
 // Contains all logic for the application and manages states, all functions to be used are written here
 export default function GroceriesAppContainer() {
@@ -14,36 +15,52 @@ export default function GroceriesAppContainer() {
     const [productQuantities, setProductQuantities] = useState([]);
     // State used to store all cart items for all products currently in the cart
     const [cartItems, setCartItems] = useState([]);
+    // Form Data used for editing and submitting new products
     const [formData, setFormData] = useState({
         productName: "",
         brand: "",
         image: "",
         price: "",
     });
+    // Response from DB which SHOULD change after each DB call (Other than in handleProductsDB)
     const [postResponse, setPostResponse] = useState({ message: "", date: "" });
+    // Set the editing state so we can swap between editing and submitting new products
     const [isEditing, setIsEditing] = useState(false);
 
+    // Use Effect to update products DB on postReponse changes
     useEffect(() => {
         handleProductsDB();
     }, [postResponse]);
 
+    // =====================================
+    // ======= Info And DB Handling ========
+    // =====================================
+    // Function to grab all products from the DB and update product quantities on first render
     const handleProductsDB = async () => {
         try {
+            // Get all products from the db via our server
             const response = await axios.get("http://localhost:3000/products");
+            // Set products using the response
             setProducts(response.data);
-            setProductQuantities(
-                response.data.map((prod) => {
-                    return {
-                        id: prod.id,
-                        quantity: 0,
-                    };
-                })
-            );
+            // Check if post response is set
+            if (!postResponse.message) {
+                // If it is set up product quantities, this prevents product quantities from being reset
+                // every time a DB operation happens maintaining their current amounts
+                setProductQuantities(
+                    response.data.map((prod) => {
+                        return {
+                            _id: prod._id,
+                            quantity: 0,
+                        };
+                    })
+                );
+            }
         } catch (error) {
             console.log(error.message);
         }
     };
 
+    // Function to Reset the form data to empty values
     const handleResetForm = () => {
         setFormData({
             productName: "",
@@ -55,56 +72,86 @@ export default function GroceriesAppContainer() {
 
     // Handle the submission of data
     const handleOnProductsFormSubmit = async (e) => {
+        // Prevent the default action (dont force a refresh)
         e.preventDefault();
         try {
+            // If we are in editing mode
             if (isEditing) {
+                // Update the product based off of form data
                 handleOnProductUpdate(formData._id);
+                // Reset the form
                 handleResetForm();
+                // Turn off editing mode
                 setIsEditing(false);
-            } else {
-                console.log(formData);
+            }
+            // If we are not in editing mode
+            else {
+                // Add the new submission to the DB
                 await axios
-                    .post("http://localhost:3000/products", formData)
-                    .then((response) => setPostResponse(response.data))
-                    .then(() => handleResetForm());
+                    // Format price specifically since form data does not include the $
+                    .post("http://localhost:3000/products", { ...formData, price: `$${formData.price}` })
+                    // Using the response from the server
+                    .then((response) => {
+                        // Set the post response forcing a re-render
+                        setPostResponse(response.data);
+                        // Update product quantities to contain the new product quantity
+                        setProductQuantities((prevQuantities) => [
+                            ...prevQuantities,
+                            { _id: response.data._id, quantity: 0 },
+                        ]);
+                    })
+                    // Once both operations are complete reset the form
+                    .then(() => {
+                        handleResetForm();
+                    });
             }
         } catch (error) {
             console.log(error.message);
         }
     };
 
-    // Handle the onChange event for the form
+    // Function to handle the onChange event for the products form
     const handleOnProductsFormChange = (e) => {
+        // Update form data using the html infor using name and value for each form field
         setFormData((prevData) => {
             return { ...prevData, [e.target.name]: e.target.value };
         });
     };
 
-    // Handle to delete one contact by id
-    const handleOnProductDelete = async (dbId, productId) => {
+    // Function to handle deleting one product by id
+    const handleOnProductDelete = async (_id) => {
         try {
-            const response = await axios.delete(`http://localhost:3000/products/${dbId}`);
+            // Send the delete request to the server to delete the item from the DB
+            const response = await axios.delete(`http://localhost:3000/products/${_id}`);
+            // Set the post response based off the object returned
             setPostResponse(response.data);
+            // Update product quantities to remove the item from our quantities as well
+            setProductQuantities((prevQuantities) => prevQuantities.filter((itemQuantity) => itemQuantity._id !== _id));
 
             // If the item is in the cart and we have deleted it delete item from cart as well
-            const foundCartItem = cartItems.find((cartItem) => cartItem.id === productId);
-            if (foundCartItem) handleRemoveItemFromCart(productId);
+            const foundCartItem = cartItems.find((cartItem) => cartItem._id === _id);
+            if (foundCartItem) {
+                handleRemoveItemFromCart(_id);
+            }
         } catch (error) {
             console.log(error.message);
         }
     };
 
-    const handleOnProductEdit = async (id) => {
+    // Function to handle to editing a product based off id
+    const handleOnProductEdit = async (_id) => {
         try {
-            const productToEdit = await axios.get(`http://localhost:3000/products/${id}`);
+            // Get the current product that we want to edit based off the id
+            const productToEdit = await axios.get(`http://localhost:3000/products/${_id}`);
+            // Set up formData with all relavent information for the product
             setFormData({
+                _id,
                 productName: productToEdit.data.productName,
                 brand: productToEdit.data.brand,
                 image: productToEdit.data.image,
-                price: productToEdit.data.price,
-                id: productToEdit.data.id,
-                _id: productToEdit.data._id,
+                price: productToEdit.data.price.replace("$", ""),
             });
+            // Set our editing mode to true to show we are editing an existing product and not submitting a new product
             setIsEditing(true);
         } catch (error) {
             console.log(error);
@@ -112,25 +159,30 @@ export default function GroceriesAppContainer() {
     };
 
     // Handle updating the api patch route
-    const handleOnProductUpdate = async (id) => {
+    const handleOnProductUpdate = async (_id) => {
         try {
-            const result = await axios.patch(`http://localhost:3000/products/${id}`, formData);
-            setPostResponse({ message: result.data.message, date: result.data.date });
+            // Send the patch to the server based off of the updated information
+            const result = await axios.patch(`http://localhost:3000/products/${_id}`, {
+                ...formData,
+                price: `$${formData.price}`,
+            });
+            // Set the post response based off of what is returned when the operation is completed
+            setPostResponse(result.data);
 
             // If the item exists within the cart we need to update it as well
             const foundCartItem = cartItems.find((cartItem) => cartItem._id === formData._id);
+            // If we have updated an item in our cart
             if (foundCartItem) {
                 setCartItems(
                     cartItems.map((cartItem) => {
-                        if (cartItem.id === foundCartItem.id) {
-                            console.log("found");
+                        if (cartItem._id === foundCartItem._id) {
+                            // update the information in our cart based off of the information provided in formData
                             return {
-                                _id: id,
-                                id: formData.id,
+                                _id,
                                 productName: formData.productName,
                                 brand: formData.brand,
                                 image: formData.image,
-                                price: formData.price,
+                                price: `$${formData.price}`,
                                 quantity: cartItem.quantity,
                                 total: calculateItemTotal(formData.price, cartItem.quantity),
                             };
@@ -144,6 +196,9 @@ export default function GroceriesAppContainer() {
         }
     };
 
+    // =====================================
+    // ======= Cart And Item Handling ======
+    // =====================================
     // Function used to calculate the item total based off of quantity and price
     const calculateItemTotal = (price, quantity) => {
         // Use replace to remove the $ and multiply by quantity
@@ -157,13 +212,13 @@ export default function GroceriesAppContainer() {
     };
 
     // Function used to update the quantity of items either in cart card or product card
-    const handleUpdateQuantity = (id, increment, mode) => {
+    const handleUpdateQuantity = (_id, increment, mode) => {
         // 0 is the mode to add to product total
         if (mode === 0) {
             // Use map to cycle through each item in product quantites and update them
             const newQuantities = productQuantities.map((prodQuantity) => {
                 // Once we find the item that we are adding to
-                if (prodQuantity.id === id) {
+                if (prodQuantity._id === _id) {
                     // Set up a new value for quantity and increment by either a positive value (increment) or a negative value (decrement)
                     let newQuantity = prodQuantity.quantity + increment;
                     // Check if the quantity is within range, if not assign it to 0 as it cannot be negative
@@ -184,7 +239,7 @@ export default function GroceriesAppContainer() {
             // Use map to cycle through each item in cart items and update them
             const newCartItems = cartItems.map((item) => {
                 // If we have found our item to be updated
-                if (item.id === id) {
+                if (item._id === _id) {
                     // Set up a new value for quantity and increment by either a positive value (increment) or a negative value (decrement)
                     let newQuantity = item.quantity + increment;
                     // https://stackoverflow.com/questions/9334636/how-to-create-a-dialog-with-ok-and-cancel-options
@@ -211,7 +266,7 @@ export default function GroceriesAppContainer() {
             });
 
             // If we are to remove the item then call removeItemFromCart function to do so
-            if (removeItem) handleRemoveItemFromCart(id);
+            if (removeItem) handleRemoveItemFromCart(_id);
             // Update cart items to our newly mapped array and update cart total if the item is not to be removed
             else {
                 setCartItems(newCartItems);
@@ -229,14 +284,14 @@ export default function GroceriesAppContainer() {
 
         // If the quantity is greater than 0 we must update cart items
         // Check if the new item already exists in the array
-        const foundCartItem = cartItems.find((cartItem) => cartItem.id === newItem.id);
+        const foundCartItem = cartItems.find((cartItem) => cartItem._id === newItem._id);
         let newCartItems = [];
         // If the new item exists in the array of cart items
         if (foundCartItem) {
             // Update the current list of cart items by mapping over it
             newCartItems = cartItems.map((cartItem) => {
                 // Check if the cart items id matches the new items id
-                if (cartItem.id === newItem.id) {
+                if (cartItem._id === newItem._id) {
                     // If it does add the quantity to the cart items quantity
                     const newQuantity = cartItem.quantity + newItem.quantity;
                     // Set up the total based off quantity and price
@@ -261,9 +316,9 @@ export default function GroceriesAppContainer() {
     };
 
     // Function to remove an item from the cart
-    const handleRemoveItemFromCart = (id) => {
+    const handleRemoveItemFromCart = (_id) => {
         // Filter the items to only include items without a specified id
-        const newCartItems = cartItems.filter((cartItem) => cartItem.id !== id);
+        const newCartItems = cartItems.filter((cartItem) => cartItem._id !== _id);
         // Update the cart items based off of the newly removed item
         setCartItems(newCartItems);
     };
