@@ -22,7 +22,7 @@ export default function ProductCard({
             <QuantityCounter
                 _id={_id}
                 mode={0}
-                itemQuantity={productQuantity?.quantity || 0}
+                itemQuantity={productQuantity?.quantity || 0} // In some instances quantity counter may not be set after adding a new product, this ensures that the page will break when adding
                 handleUpdateQuantity={handleUpdateQuantity}
             />
             <p>{price}</p>

@@ -56,6 +56,7 @@ export default function GroceriesAppContainer() {
                 );
             }
         } catch (error) {
+            // log an error message if one is recieved
             console.log(error.message);
         }
     };
@@ -67,6 +68,14 @@ export default function GroceriesAppContainer() {
             brand: "",
             image: "",
             price: "",
+        });
+    };
+
+    // Function to handle the onChange event for the products form
+    const handleOnProductsFormChange = (e) => {
+        // Update form data using the html infor using name and value for each form field
+        setFormData((prevData) => {
+            return { ...prevData, [e.target.name]: e.target.value };
         });
     };
 
@@ -89,7 +98,7 @@ export default function GroceriesAppContainer() {
                 // Add the new submission to the DB
                 await axios
                     // Format price specifically since form data does not include the $
-                    .post("http://localhost:3000/products", { ...formData, price: `$${formData.price}` })
+                    .post("http://localhost:3000/products", { ...formData, price: `$${formData.price}` }) // reformat price from our number field to have dollar sign encorporated
                     // Using the response from the server
                     .then((response) => {
                         // Set the post response forcing a re-render
@@ -106,16 +115,9 @@ export default function GroceriesAppContainer() {
                     });
             }
         } catch (error) {
+            // log an error message if one is recieved
             console.log(error.message);
         }
-    };
-
-    // Function to handle the onChange event for the products form
-    const handleOnProductsFormChange = (e) => {
-        // Update form data using the html infor using name and value for each form field
-        setFormData((prevData) => {
-            return { ...prevData, [e.target.name]: e.target.value };
-        });
     };
 
     // Function to handle deleting one product by id
@@ -134,6 +136,7 @@ export default function GroceriesAppContainer() {
                 handleRemoveItemFromCart(_id);
             }
         } catch (error) {
+            // log an error message if one is recieved
             console.log(error.message);
         }
     };
@@ -149,11 +152,12 @@ export default function GroceriesAppContainer() {
                 productName: productToEdit.data.productName,
                 brand: productToEdit.data.brand,
                 image: productToEdit.data.image,
-                price: productToEdit.data.price.replace("$", ""),
+                price: productToEdit.data.price.replace("$", ""), // need to remove dollar sign for number field
             });
             // Set our editing mode to true to show we are editing an existing product and not submitting a new product
             setIsEditing(true);
         } catch (error) {
+            // log an error message if one is recieved
             console.log(error);
         }
     };
@@ -182,7 +186,7 @@ export default function GroceriesAppContainer() {
                                 productName: formData.productName,
                                 brand: formData.brand,
                                 image: formData.image,
-                                price: `$${formData.price}`,
+                                price: `$${formData.price}`, // Re-add dollar sign for display
                                 quantity: cartItem.quantity,
                                 total: calculateItemTotal(formData.price, cartItem.quantity),
                             };
@@ -192,6 +196,7 @@ export default function GroceriesAppContainer() {
                 );
             }
         } catch (error) {
+            // log an error message if one is recieved
             console.log(error);
         }
     };

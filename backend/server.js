@@ -38,7 +38,8 @@ server.get("/products", async (request, response) => {
         // Send the list of products to the frontend
         response.send(products);
     } catch (error) {
-        response.status(500).send({ message: error.message, date: new Date(Date.now()) });
+        // send back an appropriate error if need be
+        response.status(500).send({ message: error.message });
     }
 });
 
@@ -59,10 +60,13 @@ server.post("/products", async (request, response) => {
         let savedProduct = await newProduct.save();
         // Send back a response with a message, the date, and our saved product id as in this case it will be needed
         // by the frontend to update product quantities. In all other cases we don't need to send back the id.
-        response
-            .status(200)
-            .send({ message: `Product is added successfully`, date: new Date(Date.now()), _id: savedProduct._id });
+        response.status(200).send({
+            message: `${productName} added successfully`,
+            date: new Date(Date.now()),
+            _id: savedProduct._id,
+        });
     } catch (error) {
+        // send back an appropriate error if need be
         response.status(400).send({ message: error.message });
     }
 });
@@ -77,6 +81,7 @@ server.delete("/products/:id", async (request, response) => {
         // Send back a user friendly message and the date so that our post response will be unique
         response.send({ message: `Product is deleted with id ${id}`, date: new Date(Date.now()) });
     } catch (error) {
+        // send back an appropriate error if need be
         response.status(400).send({ message: error.message });
     }
 });
@@ -91,6 +96,7 @@ server.get("/products/:id", async (request, response) => {
         // Send the product we need to edit to the frontend
         response.send(productToEdit);
     } catch (error) {
+        // send back an appropriate error if need be
         response.status(500).send({ message: error.message });
     }
 });
@@ -110,8 +116,9 @@ server.patch("/products/:id", async (request, response) => {
             price,
         });
         // Send back a user friendly message and the date so that our post response will be unique
-        response.send({ message: `Product has been updated with id ${id}`, date: new Date(Date.now()) });
+        response.send({ message: `${productName} has been updated with id ${id}`, date: new Date(Date.now()) });
     } catch (error) {
+        // send back an appropriate error if need be
         response.status(500).send({ message: error.message });
     }
 });
