@@ -132,7 +132,9 @@ export default function GroceriesAppContainer() {
 
             // If the item is in the cart and we have deleted it delete item from cart as well
             const foundCartItem = cartItems.find((cartItem) => cartItem._id === _id);
+            // If we have found the cart item
             if (foundCartItem) {
+                // remove it from the cart
                 handleRemoveItemFromCart(_id);
             }
         } catch (error) {
@@ -193,6 +195,7 @@ export default function GroceriesAppContainer() {
                                 total: calculateItemTotal(formData.price, cartItem.quantity), // Recalculate total
                             };
                         }
+                        // otherwise return the original
                         return cartItem;
                     })
                 );
