@@ -49,7 +49,7 @@ server.post("/products", async (request, response) => {
     const { productName, brand, image, price } = request.body;
     // Create a new product based off the information provided on frontend
     const newProduct = new Product({
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID(), // Generating a random UUID to maintain consistancy in our DB, this id is not used by the program however
         productName,
         brand,
         image,

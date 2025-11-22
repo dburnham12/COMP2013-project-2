@@ -27,14 +27,14 @@ export default function GroceriesAppContainer() {
     // Set the editing state so we can swap between editing and submitting new products
     const [isEditing, setIsEditing] = useState(false);
 
+    // =====================================
+    // ======= Info And DB Handling ========
+    // =====================================
     // Use Effect to update products DB on postReponse changes
     useEffect(() => {
         handleProductsDB();
     }, [postResponse]);
 
-    // =====================================
-    // ======= Info And DB Handling ========
-    // =====================================
     // Function to grab all products from the DB and update product quantities on first render
     const handleProductsDB = async () => {
         try {
@@ -168,7 +168,7 @@ export default function GroceriesAppContainer() {
             // Send the patch to the server based off of the updated information
             const result = await axios.patch(`http://localhost:3000/products/${_id}`, {
                 ...formData,
-                price: `$${formData.price}`,
+                price: `$${formData.price}`, // Add the dollar sign back in for consistancy and display purposes
             });
             // Set the post response based off of what is returned when the operation is completed
             setPostResponse(result.data);
@@ -178,7 +178,9 @@ export default function GroceriesAppContainer() {
             // If we have updated an item in our cart
             if (foundCartItem) {
                 setCartItems(
+                    // Use map to cycle through our cart items
                     cartItems.map((cartItem) => {
+                        // if we have found our specified cart item
                         if (cartItem._id === foundCartItem._id) {
                             // update the information in our cart based off of the information provided in formData
                             return {
@@ -188,7 +190,7 @@ export default function GroceriesAppContainer() {
                                 image: formData.image,
                                 price: `$${formData.price}`, // Re-add dollar sign for display
                                 quantity: cartItem.quantity,
-                                total: calculateItemTotal(formData.price, cartItem.quantity),
+                                total: calculateItemTotal(formData.price, cartItem.quantity), // Recalculate total
                             };
                         }
                         return cartItem;
